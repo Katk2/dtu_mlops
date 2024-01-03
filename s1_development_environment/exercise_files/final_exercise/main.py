@@ -25,25 +25,26 @@ def train(lr):
     train_set, _ = mnist()
     criterion = nn.NLLLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    
-    running_loss = 0
-    for images, labels in train_set:
-        # Flatten MNIST images into a 784 long vector
-        images = images.view(images.shape[0], -1)
-    
-        optimizer.zero_grad()
+    epoch = 5
+    for epoch in range(epoch):
+        running_loss = 0
+        for images, labels in train_set:
+            # Flatten MNIST images into a 784 long vector
+            images = images.view(images.shape[0], -1)
+        
+            optimizer.zero_grad()
 
-        # Forward pass, then backward pass, then update weights
-        output = model(images)
-        loss = criterion(output, labels)
-        loss.backward()
-        running_loss += loss.item()
-        optimizer.step()
+            # Forward pass, then backward pass, then update weights
+            output = model(images)
+            loss = criterion(output, labels)
+            loss.backward()
+            running_loss += loss.item()
+            optimizer.step()
 
-    else:
-        print(f"Training loss: {running_loss}")
+        else:
+            print(f"Training loss: {running_loss}")
 
-    torch.save(model, 'checkpoint.pth')
+        torch.save(model, f'checkpoint_{epoch}.pth')
 
     
 
