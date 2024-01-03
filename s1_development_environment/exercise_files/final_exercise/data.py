@@ -9,16 +9,18 @@ from torch.utils.data import Dataset, DataLoader
 def mnist():
     """Return train and test dataloaders for MNIST."""
     # exchange with the corrupted mnist dataset
-    BASEDIR = "C:\programmering\DTU\mlops\data\corruptmnist"
-    imgTrain = "train_images_0.pt"
-    labelTrain = "train_target_0.pt"
-    imgTest = "test_images.pt"
-    labelTest = "test_target.pt"
+    BASEDIR = 'C:/Programmering/dtu_mlops/data/corruptmnist'
+    imgTrain = 'train_images_0.pt'
+    labelTrain = 'train_target_0.pt'
+    imgTest = 'test_images.pt'
+    labelTest = 'test_target.pt'
 
-    imgPathTrain = os.path.join(BASEDIR, imgTrain) 
-    labelPathTrain = os.path.join(BASEDIR, labelTrain)
-    imgPathTest = os.path.join(BASEDIR, imgTest)
-    labelPathTest = os.path.join(BASEDIR, labelTest)
+    
+
+    imgPathTrain = 'C:/Programmering/dtu_mlops/data/corruptmnist/train_images_0.pt' 
+    labelPathTrain = 'C:/Programmering/dtu_mlops/data/corruptmnist/train_target_0.pt'
+    imgPathTest = 'C:/Programmering/dtu_mlops/data/corruptmnist/test_images.pt'
+    labelPathTest = 'C:/Programmering/dtu_mlops/data/corruptmnist/test_target.pt'
 
     dataTrain = torch.load(imgPathTrain).view(-1, 1, 28, 28)
     labelsTrain = torch.load(labelPathTrain)
