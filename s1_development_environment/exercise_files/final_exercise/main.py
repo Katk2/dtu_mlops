@@ -23,8 +23,8 @@ def train(lr):
     model = MyAwesomeModel()
     model.train()
     train_set, _ = mnist()
-    criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+    criterion = nn.NLLLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     
     running_loss = 0
     for images, labels in train_set:
@@ -41,7 +41,7 @@ def train(lr):
         optimizer.step()
 
     else:
-        print(f"Training loss: {running_loss/len(train_set)}")
+        print(f"Training loss: {running_loss}")
 
     torch.save(model, 'checkpoint.pth')
 
@@ -60,7 +60,7 @@ def evaluate(model_checkpoint):
     model = torch.load(model_checkpoint)
     _, test_set = mnist()
     model.eval()
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.NLLLoss()
 
     accuracies = []
     losses = []
