@@ -16,6 +16,7 @@ There are many reasons why one to use virtual machines:
 
 * Virtual machines allow you to scale your operations, essentially giving you access to infinitely many individual
     computers
+
 * Virtual machines allow you to use large scale hardware. For example if you are developing an deep learning model on
     your laptop and want to know the inference time for a specific hardware configuration, you can just create a virtual
     machine with those specs and run your model.
@@ -92,10 +93,15 @@ We are now going to start actually using the cloud.
             --zone=<zone> \
             --image-family=<image-family> \
             --image-project=deeplearning-platform-release \
+            # add these arguments if you want to run on GPU
+            --accelerator="type=nvidia-tesla-K80,count=1" \
+            --maintenance-policy TERMINATE \
+            --metadata="install-nvidia-driver=True" \
         ```
 
-        Hint: you can find relevant image families
-        [here](https://cloud.google.com/deep-learning-containers/docs/choosing-container).
+        You can find more info [here](https://cloud.google.com/deep-learning-vm/docs/pytorch_start_instance) on what
+        `<image-family>` should have as value and what extra argument you need to add if you want to run on GPU (if you
+        have access).
 
     3. `ssh` to the VM as one of the previous exercises. Confirm that the container indeed contains
         both a python installation and Pytorch is also installed. Hint: you also have the possibility
@@ -113,6 +119,17 @@ We are now going to start actually using the cloud.
     </figure>
 
     Try out launching this and run some of the commands from the previous exercises.
+
+!!! warning "Stopping VMs"
+
+    If you are not careful you can end up wasting a lot of credits on virtual machines that you are not using. VMs are
+    charged by the minute, so even if you are not using them you are still paying for them. Therefore, it is important
+    that you remember to stop your VMs when you are not using them. You can do this by either clicking the `Stop` button
+    in the VM overview page or by running the following command:
+
+    ```bash
+    gcloud compute instances stop <instance-name>
+    ```
 
 ## Data storage
 Another big part of cloud computing is storage of data. There are many reason that you want to store your
@@ -142,9 +159,11 @@ We are going to follow the instructions from this [page](https://dvc.org/doc/use
     ![Image](../figures/gcp5.PNG){ width="800" }
     </figure>
 
-    Give the bucket an unique name, set it to a region close by and make it of size 20 GB as seen in the image.
+    Give the bucket an unique name, set it to a region close by and importantly remember to enable *Object versioning*
+    under the last tab. Finally click `Create`.
 
-2. After creating the storage, you should be able to see it if you type
+2. After creating the storage, you should be able to see it online and you should be able to see it if you type in your
+    local terminal:
 
     ```bash
     gsutil ls
@@ -165,6 +184,17 @@ We are going to follow the instructions from this [page](https://dvc.org/doc/use
     dvc remote add -d remote_storage <output-from-gsutils>
     ```
 
+    In addition we are also going to modify the remote to support object versioning (called `version_aware` in `dvc`):
+
+    ```bash
+    dvc remote modify remote_storage version_aware true
+    ```
+
+    This will change the default way that `dvc` handles data. Instead of just storing the latest version of the data as
+    [content-addressable storage](https://dvc.org/doc/user-guide/project-structure/internal-files#structure-of-the-cache-directory)
+    it will now store the data as it looks in our local repository, which allows us to not only use `dvc` to download
+    our data.
+
 5. The above command will change the `.dvc/config` file. `git add` and `git commit` the changes to that file.
     Finally, push data to the cloud
 
@@ -175,9 +205,32 @@ We are going to follow the instructions from this [page](https://dvc.org/doc/use
 6. Finally, make sure that you can pull without having to give your credentials. The easiest way to see this
     is to delete the `.dvc/cache` folder that should be locally on your laptop and afterwards do a `dvc pull`.
 
-If you ever end up with credential issues when working with your data, we in general recommend for this course that you
-store data in a bucket that is public accessible e.g. no authentication needed. You can read more about how to make your
-buckets public [here](https://cloud.google.com/storage/docs/access-control/making-data-public).
+This setup should work when trying to access the data from your laptop, which we authenticated in the previous module.
+However, how can you access the data from a virtual machine, inside a docker container or from a different laptop? We
+in general recommend two ways:
+
+* You can make the bucket public accessible e.g. no authentication needed. That means that anyone with the url to the
+    data can access it. This is the easiest way to do it, but also the least secure. You can read more about how to make
+    your buckets public [here](https://cloud.google.com/storage/docs/access-control/making-data-public).
+
+* You can create a [service account](https://cloud.google.com/iam/docs/service-account-overview) which is a more secure
+    way of accessing data. A service account is essentially a second user which you can give access to specific
+    services. You can read more about how to create a service account
+    [here](https://cloud.google.com/iam/docs/creating-managing-service-accounts). Once you have created a service
+    account you can give it access to a specific bucket by going to the `Permissions` tab of the bucket and add the
+    service account as a member.
+
+    <figure markdown>
+    ![Image](../figures/gcp_bucket_permission.png){ width="800" }
+    </figure>
+
+    If you need to authenticate your service account from a VM, you can do it by running the following command:
+
+    ```bash
+    gcloud auth activate-service-account --key-file=<key-file>
+    ```
+
+    where the `<key-file` is the json file that you downloaded when you created the service account (DO NOT SHARE THIS).
 
 ## Artifact registry
 
@@ -356,7 +409,8 @@ parts of our pipeline.
         need to do the same setup step you have done on your own machine: clone your github, install dependencies,
         download data, run code. Try doing this to make sure you can train a model.
 
-2. The last step in the previous exercise involves a lot of setup that would be necessary to do every time we create a
+2. (Optional, may not work as intended) The last step in the previous exercise involves a lot of setup that would be
+    necessary to do every time we create a
     new VM, making horizontal scaling of experiments cumbersome. However, we have already developed docker images that
     can take care of most of the setup.
 
@@ -439,12 +493,17 @@ parts of our pipeline.
         workerPoolSpecs:
             machineSpec:
                 machineType: n1-standard-8
-                acceleratorType: NVIDIA_TESLA_T4
+                acceleratorType: NVIDIA_TESLA_T4 #(1)!
                 acceleratorCount: 1
             replicaCount: 1
             containerSpec:
                 imageUri: gcr.io/<project-id>/<docker-img>
         ```
+
+        1. In this case we are requesting a Nvidia Tesla T4 GPU. This will only work if you have quota for allocating
+            this type of GPU in the Vertex AI service. You can check how to request quota in the last exercise of the
+            [previous module](cloud_setup.md). Remember that it is not enough to just request quota for the GPU, the
+            request need to by approved by Google before you can use it.
 
         you can read more about the configuration formatting
         [here](https://cloud.google.com/vertex-ai/docs/reference/rest/v1/CustomJobSpec)
@@ -470,6 +529,21 @@ parts of our pipeline.
         </figure>
 
         Check it out.
+
+    5. During custom training we do not necessarily need to use `dvc` for downloading our data. A more efficient way is
+        to use cloud storage as a [mounted file system](https://cloud.google.com/vertex-ai/docs/training/cloud-storage-file-system).
+        This allows us to access data directly from the cloud storage without having to download it first. All our
+        training jobs are automatically mounted a `gcs` folder in the root directory. Try to access the data from your
+        training script:
+
+        ```python
+        # loading from a bucket using mounted file system
+        data = torch.load('/gcs/<my-bucket-name>/data.pt')
+        # writing to a bucket using mounted file system
+        torch.save(data, '/gcs/<my-bucket-name>/data.pt')
+        ```
+
+        is should speed up the training process a bit.
 
 This ends the session on how to use Google cloud services for now. In a future session we are going to investigate a bit
 more of the services offered in GCP, in particular for deploying the models that we have just trained.

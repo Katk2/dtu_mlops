@@ -191,7 +191,7 @@ service in GCP for deploying containers.
     You can now access you application by clicking url. This will access the root of your application, so you may need
     to add `/` or `/<path>` to the url depending on how the app works.
 
-5. (Optional) Everything we just did to deploy an container can be reproduced using the following command:
+5. Everything we just did to deploy an container can be reproduced using the following command:
 
     ```bash
     gcloud run deploy $APP --image $TAG --platform managed --region $REGION --allow-unauthenticated
@@ -206,8 +206,46 @@ service in GCP for deploying containers.
 
     feel free to experiment doing the deployment from the command line.
 
-6. As an final exercise, we recommend redoing the above deployment steps with your own developed MNIST code such that
-    you get more experience with deploying a machine learning application.
+6. Instead of deploying our docker container using the UI or command line, which is a manual operation, we can do it
+    in a continues manner by using `cloudbuild.yaml` file we learned about in the previous section. We just need to add
+    a new step to the file. We provide an example
+
+    ```yaml
+    steps:
+    # Build the container image
+    - name: 'gcr.io/cloud-builders/docker'
+      args: ['build', '-t', 'gcr.io/$PROJECT_ID/<container-name>:lates', '.'] #(1)!
+    # Push the container image to Container Registry
+    - name: 'gcr.io/cloud-builders/docker'
+      args: ['push', 'gcr.io/$PROJECT_ID/<container-name>:latest']
+    # Deploy container image to Cloud Run
+    - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+      entrypoint: gcloud
+      args:
+      - 'run'
+      - 'deploy'
+      - '<service-name>'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/<container-name>:latest'
+      - '--region'
+      - '<region>'
+    ```
+
+    1. This line assume you are standing in the root of your repository and is trying to build the docker image
+        specified in a file called `Dockerfile` and tag it with the name `gcr.io/$PROJECT_ID/my_deployment:latest`.
+        Therefore if you want to point to another dockerfile you need to add `-f` option to the command. For example
+        if you want to point to a `my_app/my_serving_app.dockerfile` you need to change the line to
+
+        ```yaml
+        args: ['build', '-f', 'my_app/my_serving_app.dockerfile', '-t', 'gcr.io/$PROJECT_ID/my_deployment:lates', '.']
+        ```
+
+    where you need to replace `<container-name>` with the name of your container, `<service-name>` with the name of the
+    service you want to deploy and `<region>` with the region you want to deploy to. Afterwards you need to setup a
+    trigger (or reuse the one you already have) to build the container and deploy it to cloud run. Confirm that this
+    works by making a change to your application and pushing it to github and see if the application is updated
+    continuously. For help you can look [here](https://cloud.google.com/build/docs/deploying-builds/deploy-cloud-run)
+    for help. If you succeeded, congratulations you have now setup a continues deployment pipeline.
 
 That ends the exercises on deployment. The exercises above is just a small taste of what deployment has to offer. In
 both sections we have explicitly chosen to work with *serverless* deployments. But what if you wanted to do the
@@ -215,5 +253,5 @@ opposite e.g. being the one in charge of the management of the cluster that hand
 really interested in taking deployment to the next level should get started on *kubernetes* which is the de-facto
 open-source container orchestration platform that is being used in production environments. If you want to deep dive we
 recommend starting [here](https://cloud.google.com/ai-platform/pipelines/docs) which describes how to make pipelines
-that are a necessary component before you start to [create](https://cloud.google.com/ai-platform/pipelines/docs/configure-gke-cluster)
-your own kubernetes cluster.
+that are a necessary component before you start to
+[create](https://cloud.google.com/ai-platform/pipelines/docs/configure-gke-cluster) your own kubernetes cluster.

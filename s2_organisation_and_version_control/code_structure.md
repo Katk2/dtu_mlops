@@ -35,7 +35,7 @@ codebase should probably be different.
 ## Cookiecutter
 
 We are in this course going to use the tool [cookiecutter](https://cookiecutter.readthedocs.io/en/latest/README.html),
-which is tool for creating projects from *project templates*. A project template is in short just an overall structure of
+which is tool for creating projects from *project templates*. A project template is in short just na overall structure of
 how you want your folders, files etc. to be organised from the beginning. For this course we are going to be using a
 custom [MLOps template](https://github.com/SkafteNicki/mlops_template). The template is essentially a fork of the
 [cookiecutter data science template](https://github.com/drivendata/cookiecutter-data-science) template that has been
@@ -222,7 +222,19 @@ in this way paths (for saving and loading files) are always relative to the root
     1. If you feel like the template can be improve in some way, feel free to either open a issue with the proposed
         improvement or directly send a pull request to the repository 😄.
 
-    You do this by running the cookiecutter command using the template url.
+    You do this by running the cookiecutter command using the template url:
+
+    ```bash
+    cookiecutter <url-to-template>
+    ```
+
+    !!! note "Valid project names"
+
+        When asked for a project name you should follow the
+        [PEP8](https://peps.python.org/pep-0008/#package-and-module-names) guidelines for naming packages. This means
+        that the name should be all lowercase and if you want to separate words, you should use underscores. For example
+        `my_project` is a valid name, while `MyProject` is not. Additionally, the packaage name cannot start with a
+        number.
 
     ??? note "Flat-layout vs src-layout"
 
@@ -241,9 +253,10 @@ in this way paths (for saving and loading files) are always relative to the root
     ```
 
 4. Start by filling out the `<project_name>/data/make_dataset.py` file. When this file runs, it should take the raw
-    data e.g. the corrupted MNIST files from yesterday which now should be located in a `data/raw` folder and process
-    them into a single tensor, normalize the tensor and save this intermediate representation to the `data/processed`
-    folder. By normalization here we refer to making sure the images have mean 0 and standard deviation 1.
+    data e.g. the corrupted MNIST files from yesterday (`../data/corruptmnist`) which now should be located in a
+    `data/raw` folder and process them into a single tensor, normalize the tensor and save this intermediate
+    representation to the `data/processed` folder. By normalization here we refer to making sure the images have mean 0
+    and standard deviation 1.
 
 5. This template comes with a `Makefile` that can be used to easily define common operations in a project. You do not
     have to understand the complete file but try taking a look at it. In particular the following commands may come in
